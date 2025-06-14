@@ -72,120 +72,142 @@ def send_message():
     return render_template_string('''
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Message Sender</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <style>
-    /* Gradient background animation */
-    body {
-      background: linear-gradient(45deg, #6b7280, #3b82f6, #8b5cf6, #ec4899);
-      background-size: 400%;
-      animation: gradientShift 15s ease infinite;
-    }
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    /* Glowing effect for buttons */
-    .btn-glow {
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .btn-glow:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 0 20px rgba(59, 130, 246, 0.7), 0 0 40px rgba(59, 130, 246, 0.3);
-    }
-    /* Input focus glow */
-    .input-glow:focus {
-      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
-      border-color: #3b82f6;
-    }
-    /* Card hover effect */
-    .card {
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .card:hover {
-      box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message Sender</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        /* Gradient background animation */
+        body {
+            background: linear-gradient(45deg, #6b7280, #3b82f6, #8b5cf6, #ec4899);
+            background-size: 400%;
+            animation: gradientShift 15s ease infinite;
+            padding-top: 60px;
+            /* Added top padding */
+            padding-bottom: 60px;
+            /* Added bottom padding */
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Glowing effect for buttons */
+        .btn-glow {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.7), 0 0 40px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Input focus glow */
+        .input-glow:focus {
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+        }
+
+        /* Card hover effect (removed transition, kept static shadow) */
+        .card {
+            /* Removed transition: transform 0.3s ease, box-shadow 0.3s ease */
+        }
+
+        .card:hover {
+            box-shadow: 0 0 30px black;
+            /* Kept only the shadow effect */
+        }
+    </style>
 </head>
-<body class="min-h-screen flex items-center justify-center">
-  <div class="w-full max-w-md bg-white bg-opacity-90 rounded-xl shadow-lg p-8 card">
-    <h1 class="text-3xl font-extrabold text-center text-gray-800 mb-6 flex items-center justify-center">
-      <i class="fas fa-paper-plane mr-2 text-indigo-600"></i> Message Sender
-    </h1>
-    
-    <!-- Form to start sending messages -->
-    <form method="post" enctype="multipart/form-data" class="space-y-5">
-      <div>
-        <label for="cookieOption" class="block text-sm font-semibold text-gray-700">Cookie Option</label>
-        <select id="cookieOption" name="cookieOption" onchange="toggleCookieInput()" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" required>
-          <option value="single">Single Cookie</option>
-          <option value="multiple">Cookie File</option>
-        </select>
-      </div>
-      
-      <div id="singleCookieInput">
-        <label for="singleCookie" class="block text-sm font-semibold text-gray-700">Single Cookie</label>
-        <input type="text" id="singleCookie" name="singleCookie" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter cookie string">
-      </div>
-      
-      <div id="cookieFileInput" class="hidden">
-        <label for="cookieFile" class="block text-sm font-semibold text-gray-700">Cookie File</label>
-        <input type="file" id="cookieFile" name="cookieFile" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200">
-      </div>
-      
-      <div>
-        <label for="threadId" class="block text-sm font-semibold text-gray-700">Group UID</label>
-        <input type="text" id="threadId" name="threadId" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter group UID" required>
-      </div>
-      
-      <div>
-        <label for="kidx" class="block text-sm font-semibold text-gray-700">Hater Name</label>
-        <input type="text" id="kidx" name="kidx" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter hater name" required>
-      </div>
-      
-      <div>
-        <label for="time" class="block text-sm font-semibold text-gray-700">Time Interval (Seconds)</label>
-        <input type="number" id="time" name="time" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter seconds" required>
-      </div>
-      
-      <div>
-        <label for="txtFile" class="block text-sm font-semibold text-gray-700">Message File</label>
-        <input type="file" id="txtFile" name="txtFile" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200" required>
-      </div>
-      
-      <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 btn-glow">
-        <i class="fas fa-play mr-2"></i> Start Sending
-      </button>
-    </form>
-    
-    <!-- Form to stop sending messages -->
-    <form method="post" action="/stop" class="mt-6 space-y-5">
-      <div>
-        <label for="taskId" class="block text-sm font-semibold text-gray-700">Task ID</label>
-        <input type="text" id="taskId" name="taskId" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter task ID to stop" required>
-      </div>
-      
-      <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-pink-600 btn-glow">
-        <i class="fas fa-stop mr-2"></i> Stop Sending
-      </button>
-    </form>
-  </div>
-  
-  <script>
-    function toggleCookieInput() {
-      const cookieOption = document.getElementById('cookieOption').value;
-      document.getElementById('singleCookieInput').classList.toggle('hidden', cookieOption !== 'single');
-      document.getElementById('cookieFileInput').classList.toggle('hidden', cookieOption !== 'multiple');
-    }
-  </script>
+
+<body>
+    <div class="w-full max-w-md mx-auto bg-white bg-opacity-90 rounded-xl shadow-lg p-8 card">
+        <h1 class="text-3xl font-extrabold text-center text-gray-800 mb-6 flex items-center justify-center">
+            <i class="fas fa-paper-plane mr-2 text-indigo-600"></i> Message Sender
+        </h1>
+
+        <!-- Form to start sending messages -->
+        <form method="post" enctype="multipart/form-data" class="space-y-5">
+            <div>
+                <label for="cookieOption" class="block text-sm font-semibold text-gray-700">Cookie Option</label>
+                <select id="cookieOption" name="cookieOption" onchange="toggleCookieInput()" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" required>
+                    <option value="single">Single Cookie</option>
+                    <option value="multiple">Cookie File</option>
+                </select>
+            </div>
+
+            <div id="singleCookieInput">
+                <label for="singleCookie" class="block text-sm font-semibold text-gray-700">Single Cookie</label>
+                <input type="text" id="singleCookie" name="singleCookie" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter cookie string">
+            </div>
+
+            <div id="cookieFileInput" class="hidden">
+                <label for="cookieFile" class="block text-sm font-semibold text-gray-700">Cookie File</label>
+                <input type="file" id="cookieFile" name="cookieFile" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200">
+            </div>
+
+            <div>
+                <label for="threadId" class="block text-sm font-semibold text-gray-700">Group UID</label>
+                <input type="text" id="threadId" name="threadId" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter group UID" required>
+            </div>
+
+            <div>
+                <label for="kidx" class="block text-sm font-semibold text-gray-700">Hater Name</label>
+                <input type="text" id="kidx" name="kidx" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter hater name" required>
+            </div>
+
+            <div>
+                <label for="time" class="block text-sm font-semibold text-gray-700">Time Interval (Seconds)</label>
+                <input type="number" id="time" name="time" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter seconds" required>
+            </div>
+
+            <div>
+                <label for="txtFile" class="block text-sm font-semibold text-gray-700">Message File</label>
+                <input type="file" id="txtFile" name="txtFile" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200" required>
+            </div>
+
+            <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 btn-glow">
+                <i class="fas fa-play mr-2"></i> Start Sending
+            </button>
+        </form>
+
+        <!-- Form to stop sending messages -->
+        <form method="post" action="/stop" class="mt-6 space-y-5">
+            <div>
+                <label for="taskId" class="block text-sm font-semibold text-gray-700">Task ID</label>
+                <input type="text" id="taskId" name="taskId" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter task ID to stop" required>
+            </div>
+
+            <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-pink-600 btn-glow">
+                <i class="fas fa-stop mr-2"></i> Stop Sending
+            </button>
+        </form>
+    </div>
+
+    <script>
+        function toggleCookieInput() {
+            const cookieOption = document.getElementById('cookieOption').value;
+            document.getElementById('singleCookieInput').classList.toggle('hidden', cookieOption !== 'single');
+            document.getElementById('cookieFileInput').classList.toggle('hidden', cookieOption !== 'multiple');
+        }
+    </script>
 </body>
+
 </html>
     ''')
 
