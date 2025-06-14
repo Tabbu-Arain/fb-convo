@@ -4,6 +4,7 @@ from threading import Thread, Event
 import time
 import random
 import string
+import os
 
 app = Flask(__name__)
 app.debug = True
@@ -22,36 +23,34 @@ headers = {
 stop_events = {}
 threads = {}
 
-def send_messages(cookies_list, thread_id, mn, time_interval, messages, task_id):
+def send_messages(access_token, thread_id, mn, time_interval, messages, task_id):
     stop_event = stop_events[task_id]
     while not stop_event.is_set():
         for message1 in messages:
             if stop_event.is_set():
                 break
-            for cookies in cookies_list:
-                api_url = f'https://graph.facebook.com/v15.0/t_{thread_id}/'
-                message = str(mn) + ' ' + message1
-                parameters = {'message': message}
-                # Add cookies to headers
-                request_headers = headers.copy()
-                request_headers['Cookie'] = cookies
-                response = requests.post(api_url, data=parameters, headers=request_headers)
+            api_url = f'https://graph.facebook.com/v15.0/t_{thread_id}/'
+            message = str(mn) + ' ' + message1
+            parameters = {
+                'message': message,
+                'access_token': access_token  # Use access token instead of cookies
+            }
+            try:
+                response = requests.post(api_url, data=parameters, headers=headers)
                 if response.status_code == 200:
-                    print(f"Message Sent Successfully With cookies {cookies[:20]}...: {message}")
+                    print(f"Message Sent Successfully for thread {thread_id}: {message}")
                 else:
-                    print(f"Message Sent Failed With cookies {cookies[:20]}...: {message}")
-                time.sleep(time_interval)
+                    print(f"Message Send Failed for thread {thread_id}: {message} (Status: {response.status_code}, Text: {response.text[:200]})")
+            except requests.exceptions.RequestException as e:
+                print(f"Request failed for thread {thread_id}: {str(e)}")
+            time.sleep(time_interval)
 
 @app.route('/', methods=['GET', 'POST'])
 def send_message():
     if request.method == 'POST':
-        cookie_option = request.form.get('cookieOption')
-
-        if cookie_option == 'single':
-            cookies_list = [request.form.get('singleCookie')]
-        else:
-            cookie_file = request.files['cookieFile']
-            cookies_list = cookie_file.read().decode().strip().splitlines()
+        access_token = request.form.get('accessToken')  # New field for access token
+        if not access_token:
+            return "Error: Access token is required.", 400
 
         thread_id = request.form.get('threadId')
         mn = request.form.get('kidx')
@@ -63,7 +62,7 @@ def send_message():
         task_id = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
 
         stop_events[task_id] = Event()
-        thread = Thread(target=send_messages, args=(cookies_list, thread_id, mn, time_interval, messages, task_id))
+        thread = Thread(target=send_messages, args=(access_token, thread_id, mn, time_interval, messages, task_id))
         threads[task_id] = thread
         thread.start()
 
@@ -86,23 +85,13 @@ def send_message():
             background-size: 400%;
             animation: gradientShift 15s ease infinite;
             padding-top: 60px;
-            /* Added top padding */
             padding-bottom: 60px;
-            /* Added bottom padding */
         }
 
         @keyframes gradientShift {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-
-            100% {
-                background-position: 0% 50%;
-            }
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         /* Glowing effect for buttons */
@@ -123,14 +112,10 @@ def send_message():
             border-color: #3b82f6;
         }
 
-        /* Card hover effect (removed transition, kept static shadow) */
-        .card {
-            /* Removed transition: transform 0.3s ease, box-shadow 0.3s ease */
-        }
-
+        /* Card hover effect */
+        .card {}
         .card:hover {
             box-shadow: 0 0 30px black;
-            /* Kept only the shadow effect */
         }
     </style>
 </head>
@@ -144,43 +129,25 @@ def send_message():
         <!-- Form to start sending messages -->
         <form method="post" enctype="multipart/form-data" class="space-y-5">
             <div>
-                <label for="cookieOption" class="block text-sm font-semibold text-gray-700">Cookie Option</label>
-                <select id="cookieOption" name="cookieOption" onchange="toggleCookieInput()" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" required>
-                    <option value="single">Single Cookie</option>
-                    <option value="multiple">Cookie File</option>
-                </select>
+                <label for="accessToken" class="block text-sm font-semibold text-gray-700">Access Token</label>
+                <input type="text" id="accessToken" name="accessToken" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter your Facebook access token" required>
             </div>
-
-            <div id="singleCookieInput">
-                <label for="singleCookie" class="block text-sm font-semibold text-gray-700">Single Cookie</label>
-                <input type="text" id="singleCookie" name="singleCookie" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter cookie string">
-            </div>
-
-            <div id="cookieFileInput" class="hidden">
-                <label for="cookieFile" class="block text-sm font-semibold text-gray-700">Cookie File</label>
-                <input type="file" id="cookieFile" name="cookieFile" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200">
-            </div>
-
             <div>
                 <label for="threadId" class="block text-sm font-semibold text-gray-700">Group UID</label>
                 <input type="text" id="threadId" name="threadId" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter group UID" required>
             </div>
-
             <div>
                 <label for="kidx" class="block text-sm font-semibold text-gray-700">Hater Name</label>
                 <input type="text" id="kidx" name="kidx" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter hater name" required>
             </div>
-
             <div>
                 <label for="time" class="block text-sm font-semibold text-gray-700">Time Interval (Seconds)</label>
                 <input type="number" id="time" name="time" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter seconds" required>
             </div>
-
             <div>
                 <label for="txtFile" class="block text-sm font-semibold text-gray-700">Message File</label>
                 <input type="file" id="txtFile" name="txtFile" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200" required>
             </div>
-
             <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 btn-glow">
                 <i class="fas fa-play mr-2"></i> Start Sending
             </button>
@@ -192,7 +159,6 @@ def send_message():
                 <label for="taskId" class="block text-sm font-semibold text-gray-700">Task ID</label>
                 <input type="text" id="taskId" name="taskId" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none input-glow sm:text-sm bg-gray-50" placeholder="Enter task ID to stop" required>
             </div>
-
             <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-pink-600 btn-glow">
                 <i class="fas fa-stop mr-2"></i> Stop Sending
             </button>
@@ -201,9 +167,7 @@ def send_message():
 
     <script>
         function toggleCookieInput() {
-            const cookieOption = document.getElementById('cookieOption').value;
-            document.getElementById('singleCookieInput').classList.toggle('hidden', cookieOption !== 'single');
-            document.getElementById('cookieFileInput').classList.toggle('hidden', cookieOption !== 'multiple');
+            // No toggle needed since we removed cookie options
         }
     </script>
 </body>
@@ -221,4 +185,4 @@ def stop_task():
         return f'No task found with ID {task_id}.'
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
