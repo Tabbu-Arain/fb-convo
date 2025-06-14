@@ -110,7 +110,6 @@ def send_message():
       transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
     .card:hover {
-      transform: scale(1.02);
       box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
     }
   </style>
